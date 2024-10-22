@@ -19,10 +19,8 @@ from core.constants import (
     MONGO_DB,
     MONGO_HOST,
     MONGO_PASSWORD,
-    MONGO_PORT,
     MONGO_USERNAME,
     REDIS_HOST,
-    REDIS_PORT,
 )
 
 
@@ -95,13 +93,13 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "core.wsgi.application"
 
+
 # MongoDB
+MONGO_URI = f"mongodb+srv://{MONGO_USERNAME}:{MONGO_PASSWORD}@{MONGO_HOST}/{MONGO_DB}?retryWrites=true&w=majority"
+
 connect(
     db=MONGO_DB,
-    host=MONGO_HOST,
-    port=MONGO_PORT,
-    username=MONGO_USERNAME,
-    password=MONGO_PASSWORD,
+    host=MONGO_URI,
     uuidRepresentation="standard",
 )
 
@@ -109,7 +107,7 @@ connect(
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/",
+        "LOCATION": REDIS_HOST,
     }
 }
 
