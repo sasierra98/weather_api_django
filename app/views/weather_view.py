@@ -10,7 +10,11 @@ from rest_framework.response import Response
 from rest_framework import status
 from mongoengine.errors import DoesNotExist
 
-from app.constants import OPEN_WEATHER_MAP_API, OPEN_WEATHER_MAP_API_KEY
+from app.constants import (
+    OPEN_WEATHER_MAP_API,
+    OPEN_WEATHER_MAP_API_KEY,
+    OPEN_WEATHER_MAP_ONE_CALL_KEY,
+)
 from app.models.weather import Weather
 from app.serializers.weather_serializer import (
     WeatherResponseSerializer,
@@ -38,6 +42,10 @@ class WeatherAPIView(APIView):
 
         city = request.query_params.get("city", "")
         country = request.query_params.get("country", "")
+
+        weather_api_key = request.headers.get("X-Open-Weather-Key")
+        forecast_api_key = request.headers.get("X-Open-Weather-Call-Key")
+
         try:
             if not self._validate_params(city, country):
                 return Response(
@@ -45,8 +53,10 @@ class WeatherAPIView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            weather_data = self._fetch_weather_data(city, country)
-            weather_forecast_data = self._fetch_weather_forecast(weather_data)
+            weather_data = self._fetch_weather_data(city, country, weather_api_key)
+            weather_forecast_data = self._fetch_weather_forecast(
+                weather_data, forecast_api_key
+            )
             weather_response = self._format_weather_response(
                 weather_data, weather_forecast_data
             )
@@ -108,19 +118,23 @@ class WeatherAPIView(APIView):
             return False
         return True
 
-    def _fetch_weather_data(self, city: str, country: str) -> Dict[str, Any]:
+    def _fetch_weather_data(
+        self, city: str, country: str, weather_api_key: str
+    ) -> Dict[str, Any]:
         """
-        Fetches weather data for a specified city and country from the OpenWeatherMap API.
+        Fetches weather data for a given city and country using the OpenWeatherMap API.
         Args:
-            city (str): The name of the city for which to fetch weather data.
+            city (str): The name of the city to fetch weather data for.
             country (str): The country code of the city.
+            weather_api_key (str): The API key to use for the request. If not provided, a default key will be used.
         Returns:
-            Dict[str, Any]: A dictionary containing the weather data if the request is successful.
-            Response: A DRF Response object with an error message if the request fails.
+            Dict[str, Any]: The weather data in JSON format if the request is successful.
+            Response: An error response with a message if the request fails.
         """
 
+        api_key = OPEN_WEATHER_MAP_API_KEY if not weather_api_key else weather_api_key
         weather_request = requests.get(
-            f"{OPEN_WEATHER_MAP_API}/data/2.5/weather?q={city},{country}&appid={OPEN_WEATHER_MAP_API_KEY}"
+            f"{OPEN_WEATHER_MAP_API}/data/2.5/weather?q={city},{country}&appid={api_key}"
         )
 
         if weather_request.status_code != 200:
@@ -131,24 +145,27 @@ class WeatherAPIView(APIView):
         return weather_request.json()
 
     def _fetch_weather_forecast(
-        self, weather_response: Dict[str, Any]
+        self, weather_response: Dict[str, Any], forecast_api_key: str
     ) -> Dict[str, Any]:
         """
-        Fetches the weather forecast for a given location using the OpenWeatherMap API.
+        Fetches the weather forecast for a given location using the OpenWeatherMap One Call API.
         Args:
-            weather_response (Dict[str, Any]): A dictionary containing weather data,
-                                               including coordinates of the city.
+            weather_response (Dict[str, Any]): The response from the initial weather API call containing location data.
+            forecast_api_key (str): The API key to use for the forecast request. If not provided, a default key will be used.
         Returns:
-            Dict[str, Any]: A dictionary containing the weather forecast data if the request is successful.
-                            If the request fails, returns a Response object with an error message and
-                            HTTP 500 status code.
+            Dict[str, Any]: The JSON response from the One Call API containing the weather forecast data.
+        Raises:
+            Response: If the API request fails, a response with an error message and HTTP 500 status is returned.
         """
 
         city_lat = weather_response["coord"]["lat"]
         city_lon = weather_response["coord"]["lon"]
+        api_key = (
+            OPEN_WEATHER_MAP_ONE_CALL_KEY if not forecast_api_key else forecast_api_key
+        )
 
         weather_one_call_request = requests.get(
-            f"{OPEN_WEATHER_MAP_API}/data/2.5/onecall?lat={city_lat}&lon={city_lon}&appid=5796abbde9106b7da4febfae8c44c232"
+            f"{OPEN_WEATHER_MAP_API}/data/2.5/onecall?lat={city_lat}&lon={city_lon}&appid={api_key}"
         )
 
         if weather_one_call_request.status_code != 200:
