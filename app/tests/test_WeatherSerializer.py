@@ -2,7 +2,7 @@ import pytest
 import pytz
 from mongoengine import connect, disconnect
 import mongomock
-from app.serializers.WeatherSerializer import WeatherResponseSerializer
+from app.serializers.weather_serializer import WeatherResponseSerializer
 from datetime import datetime
 
 
