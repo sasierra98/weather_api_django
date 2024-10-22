@@ -6,17 +6,13 @@ from app.models.Weather import Weather, Coord, WeatherData, Main, Wind, Clouds, 
 
 @pytest.fixture(scope="module", autouse=True)
 def mongoengine_connection():
+    disconnect()
     connect(
         "mongoenginetest",
         host="mongodb://localhost",
-        uuidRepresentation="standard",
         mongo_client_class=mongomock.MongoClient,
-        alias="testdb",
+        uuidRepresentation="standard",
     )
-    print("Connected to test database")
-    yield
-    disconnect()
-    print("Disconnected from test database")
 
 
 @pytest.fixture(autouse=True)
