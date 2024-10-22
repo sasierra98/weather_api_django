@@ -15,7 +15,7 @@ from app.constants import (
     OPEN_WEATHER_MAP_API_KEY,
     OPEN_WEATHER_MAP_ONE_CALL_KEY,
 )
-from app.models.weather import Weather
+from app.models import Weather
 from app.serializers.weather_serializer import (
     WeatherResponseSerializer,
     WeatherSerializer,

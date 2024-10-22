@@ -1,7 +1,7 @@
 import pytest
 from mongoengine import connect, disconnect
 import mongomock
-from app.models.weather import Weather, Coord, WeatherData, Main, Wind, Clouds, Sys
+from app.models import Weather, Coord, WeatherData, Main, Wind, Clouds, Sys
 
 
 @pytest.fixture(scope="module", autouse=True)
