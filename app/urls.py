@@ -17,8 +17,8 @@ Including another URLconf
 
 from django.urls import path
 
-from app.views import WeatherAPIView
+from app.views.weather_view import WeatherAPIView
 
 urlpatterns = [
-    path("weather/", WeatherAPIView.as_view()),
+    path("weather/", WeatherAPIView.as_view(), name="weather"),
 ]

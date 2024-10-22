@@ -1,7 +1,20 @@
 import pytest
 import pytz
+from mongoengine import connect, disconnect
+import mongomock
 from app.serializers.WeatherSerializer import WeatherResponseSerializer
 from datetime import datetime
+
+
+@pytest.fixture(scope="module", autouse=True)
+def mongoengine_connection():
+    disconnect()
+    connect(
+        "mongoenginetest",
+        host="mongodb://localhost",
+        mongo_client_class=mongomock.MongoClient,
+        uuidRepresentation="standard",
+    )
 
 
 @pytest.fixture

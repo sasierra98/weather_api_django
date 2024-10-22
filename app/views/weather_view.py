@@ -6,9 +6,10 @@ from django.views.decorators.cache import cache_page
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from mongoengine.errors import DoesNotExist
 
 from app.constants import OPEN_WEATHER_MAP_API, OPEN_WEATHER_MAP_API_KEY
-from app.models import Weather
+from app.models.Weather import Weather
 from app.serializers.WeatherSerializer import (
     WeatherResponseSerializer,
     WeatherSerializer,
@@ -16,7 +17,7 @@ from app.serializers.WeatherSerializer import (
 
 
 class WeatherAPIView(APIView):
-    @method_decorator(cache_page(1))
+    @method_decorator(cache_page(60 * 2))
     def get(self, request):
         """
         Handles GET requests to fetch weather data for a specified city and country.
@@ -71,7 +72,7 @@ class WeatherAPIView(APIView):
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        except Weather.DoesNotExist:
+        except DoesNotExist:
             serializer = WeatherSerializer(data=weather_response)
             if serializer.is_valid():
                 weather = Weather.objects.create(**serializer.validated_data)
