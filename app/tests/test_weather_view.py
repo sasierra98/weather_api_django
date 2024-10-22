@@ -4,7 +4,7 @@ import mongomock
 from django.urls import reverse
 from rest_framework.test import APIClient
 from rest_framework import status
-from app.models.weather import Weather
+from app.models import Weather
 from app.serializers.weather_serializer import (
     WeatherSerializer,
     WeatherResponseSerializer,
