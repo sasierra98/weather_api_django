@@ -58,3 +58,52 @@ This project is a weather API built using Django, a high-level Python web framew
     pytest
     ```
 4. The test results will be displayed in the terminal.
+
+### Finding the API URLs
+
+To find these URLs, you can use the developer tools in your web browser. Follow these steps:
+
+1. Open your web browser and navigate to the OpenWeatherMap city page, for example, [Bogota](https://openweathermap.org/city/3688689).
+2. Open the developer tools by pressing `F12` or right-clicking on the page and selecting `Inspect`.
+3. Go to the `Network` tab in the developer tools.
+4. Refresh the page to capture the network requests.
+5. Look for requests made to the OpenWeatherMap API endpoints. These requests will contain the URLs you need.
+
+By following these steps, you can easily find the necessary API URLs for different cities.
+
+## Handling API Request Failures
+
+In case the request to the OpenWeather API fails, the application will handle the error gracefully and return an appropriate response to the user. Common reasons for request failures include network issues, invalid API keys, or exceeding the rate limit.
+
+### Adding the API Key to the Request Headers
+
+To authenticate requests to the OpenWeather API, you can include your API key in the headers of the request. Use the following headers to add your API key:
+
+- `X-Open-Weather-Key`: Corresponding the appid of the data endpoint. For instance: https://api.openweathermap.org/data/2.5/weather?id=3688689&appid=5796abbde9106b7da4febfae8c44c232
+- `X-Open-Weather-Call-Key`: Corresponding the appid of the onecall endpoint. For instance: https://api.openweathermap.org/data/2.5/onecall?lat=4.6097&lon=-74.0817&units=metric&appid=5796abbde9106b7da4febfae8c44c2324
+
+
+Example of adding headers in a request:
+
+```python
+import requests
+
+url = "https://api.openweathermap.org/data/2.5/weather"
+headers = {
+    "X-Open-Weather-Key": "your_api_key_here",
+    "X-Open-Weather-Call-Key": "your_call_key_here"
+}
+params = {
+    "city": "Bogota",
+    "country": "co"
+}
+
+response = requests.get(url, headers=headers, params=params)
+
+if response.status_code == 200:
+    weather_data = response.json()
+else:
+    print("Failed to retrieve data:", response.status_code, response.text)
+```
+
+Ensure you replace `"your_api_key_here"` and `"your_call_key_here"` with your actual API keys.
