@@ -19,7 +19,7 @@ from app.serializers.weather_serializer import (
 
 
 class WeatherAPIView(APIView):
-    @method_decorator(cache_page(60 * 2))
+    @method_decorator(cache_page(60 * 2))  # 2 minutes
     def get(self, request):
         """
         Handles GET requests to fetch weather data for a specified city and country.
