@@ -68,3 +68,4 @@ class Weather(Document):
     timezone = IntField()
     name = StringField()
     cod = IntField()
+    forecast = ListField()

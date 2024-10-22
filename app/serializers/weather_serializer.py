@@ -4,6 +4,9 @@ from rest_framework import serializers
 
 from datetime import datetime, timedelta
 
+from app.models.enums import BeaufortScale, WindDirection
+from app.utils.formatters import parse_kelvin_to_celsius
+
 
 class CoordSerializer(serializers.Serializer):
     lon = serializers.FloatField()
@@ -59,6 +62,7 @@ class WeatherSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     name = serializers.CharField()
     cod = serializers.IntegerField()
+    forecast = serializers.ListField(child=serializers.DictField(), required=False)
 
 
 class WeatherResponseSerializer(WeatherSerializer):
@@ -73,16 +77,26 @@ class WeatherResponseSerializer(WeatherSerializer):
 
         return instance["name"] + ", " + instance["sys"]["country"]
 
-    def get_temperature(self, instance: Dict[str, Any]) -> str:
+    def get_temperature(self, instance: Dict[str, Any], forecast: bool = False) -> str:
         """
-        Converts the temperature from Kelvin to Celsius and returns it as a string with a degree symbol.
+        Retrieves the temperature from the given instance.
         Args:
-            instance (Dict[str, Any]): A dictionary containing weather data.
+            instance (Dict[str, Any]): The data instance containing temperature information.
+            forecast (bool, optional): Flag indicating if the temperature data is for a forecast. Defaults to False.
         Returns:
-            str: The temperature in Celsius, rounded to the nearest whole number, followed by the degree symbol "°C".
+            str: The temperature in Celsius. If forecast is True, returns a dictionary with temperatures for different times of the day.
         """
 
-        return str(round(instance["main"]["temp"] - 273.15)) + "°C"
+        if forecast:
+            return {
+                "day": parse_kelvin_to_celsius(instance["temp"]["day"]),
+                "min": parse_kelvin_to_celsius(instance["temp"]["min"]),
+                "max": parse_kelvin_to_celsius(instance["temp"]["max"]),
+                "night": parse_kelvin_to_celsius(instance["temp"]["night"]),
+                "eve": parse_kelvin_to_celsius(instance["temp"]["eve"]),
+                "morn": parse_kelvin_to_celsius(instance["temp"]["morn"]),
+            }
+        return parse_kelvin_to_celsius(instance["main"]["temp"])
 
     def get_beaufort_scale(self, wind_speed: float) -> str:
         """
@@ -93,24 +107,7 @@ class WeatherResponseSerializer(WeatherSerializer):
             str: The description of the wind speed according to the Beaufort scale.
         """
 
-        scales = (
-            (0.2, "Calm"),
-            (1.5, "Light air"),
-            (3.3, "Light breeze"),
-            (5.4, "Gentle breeze"),
-            (7.9, "Moderate breeze"),
-            (10.7, "Fresh breeze"),
-            (13.8, "Strong breeze"),
-            (17.1, "Near gale"),
-            (20.7, "Gale"),
-            (24.4, "Strong gale"),
-            (28.4, "Storm"),
-            (32.6, "Violent storm"),
-        )
-        for limit, description in scales:
-            if wind_speed <= limit:
-                return description
-        return "Hurricane"
+        return BeaufortScale.get_description(wind_speed)
 
     def get_wind_direction(self, wind_deg: float) -> str:
         """
@@ -121,71 +118,67 @@ class WeatherResponseSerializer(WeatherSerializer):
             str: The compass direction corresponding to the given wind degree.
         """
 
-        directions = [
-            "North",
-            "North-Northeast",
-            "Northeast",
-            "East-Northeast",
-            "East",
-            "East-Southeast",
-            "Southeast",
-            "South-Southeast",
-            "South",
-            "South-Southwest",
-            "Southwest",
-            "West-Southwest",
-            "West",
-            "West-Northwest",
-            "Northwest",
-            "North-Northwest",
-        ]
+        directions = [direction.value for direction in WindDirection]
         return directions[int(wind_deg / 22.5) % 16]
 
-    def get_wind(self, instance: Dict[str, Any]) -> str:
+    def get_wind(self, instance: Dict[str, Any], forecast: bool = False) -> str:
         """
-        Retrieves the wind information from the given instance.
+        Retrieves the wind information from the given instance and formats it as a string.
         Args:
-            instance (Dict[str, Any]): A dictionary containing wind data.
+            instance (Dict[str, Any]): The data instance containing wind information.
+            forecast (bool, optional): Flag indicating whether the instance is a forecast. Defaults to False.
         Returns:
-            str: A formatted string containing the wind type, wind speed, and wind direction.
+            str: A formatted string containing the wind type, speed, and direction.
         """
 
-        wind_type = self.get_beaufort_scale(instance["wind"]["speed"])
-        wind_speed = str(instance["wind"]["speed"]) + " m/s"
-        wind_direction = self.get_wind_direction(instance["wind"]["deg"])
+        if forecast:
+            wind_type = self.get_beaufort_scale(instance["wind_speed"])
+            wind_speed = str(instance["wind_speed"]) + " m/s"
+            wind_direction = self.get_wind_direction(instance["wind_deg"])
+        else:
+            wind_type = self.get_beaufort_scale(instance["wind"]["speed"])
+            wind_speed = str(instance["wind"]["speed"]) + " m/s"
+            wind_direction = self.get_wind_direction(instance["wind"]["deg"])
         return f"{wind_type}, {wind_speed}, {wind_direction}"
 
-    def get_cloudiness(self, instance: Dict[str, Any]) -> str:
+    def get_cloudiness(self, instance: Dict[str, Any], forecast: bool = False) -> str:
         """
-        Retrieves the cloudiness description from the weather data.
+        Retrieves the cloudiness description from the weather instance.
         Args:
-            instance (Dict[str, Any]): A dictionary containing weather data.
+            instance (Dict[str, Any]): The weather data instance containing weather details.
+            forecast (bool, optional): Flag indicating if the data is a forecast. Defaults to False.
         Returns:
             str: The capitalized description of the cloudiness.
         """
 
         return instance["weather"][0]["description"].capitalize()
 
-    def get_pressure(self, instance: Dict[str, Any]) -> str:
+    def get_pressure(self, instance: Dict[str, Any], forecast: bool = False) -> str:
         """
-        Retrieve the atmospheric pressure from the given instance.
+        Retrieve the pressure from the given instance.
         Args:
-            instance (Dict[str, Any]): A dictionary containing weather data.
+            instance (Dict[str, Any]): The data instance containing pressure information.
+            forecast (bool, optional): Flag indicating whether the instance is a forecast. Defaults to False.
         Returns:
-            str: The atmospheric pressure in hectopascals (hPa) as a string.
+            str: The pressure value as a string with " hPa" appended.
         """
 
+        if forecast:
+            return str(instance["pressure"]) + " hPa"
         return str(instance["main"]["pressure"]) + " hPa"
 
-    def get_humidity(self, instance: Dict[str, Any]) -> str:
+    def get_humidity(self, instance: Dict[str, Any], forecast: bool = False) -> str:
         """
-        Retrieve the humidity value from the given instance and format it as a percentage string.
+        Retrieve the humidity from the given instance.
         Args:
-            instance (Dict[str, Any]): A dictionary containing weather data.
+            instance (Dict[str, Any]): The data instance containing humidity information.
+            forecast (bool, optional): Flag indicating whether the instance is a forecast. Defaults to False.
         Returns:
-            str: The humidity value formatted as a percentage string.
+            str: The humidity value as a percentage string.
         """
 
+        if forecast:
+            return str(instance["humidity"]) + "%"
         return str(instance["main"]["humidity"]) + "%"
 
     def get_local_time(self, timestamp: int, timezone_offset: int) -> str:
@@ -204,26 +197,32 @@ class WeatherResponseSerializer(WeatherSerializer):
         )
         return local_time.strftime("%I:%M %p")
 
-    def get_sunrise(self, instance: Dict[str, Any]) -> str:
+    def get_sunrise(self, instance: Dict[str, Any], forecast: bool = False) -> str:
         """
-        Converts the sunrise time from UTC to local time based on the provided timezone.
+        Retrieves the local sunrise time from the given instance.
         Args:
-            instance (Dict[str, Any]): A dictionary containing weather data.
+            instance (Dict[str, Any]): The data instance containing sunrise and timezone information.
+            forecast (bool, optional): Flag indicating whether the instance is a forecast. Defaults to False.
         Returns:
-            str: The local time of sunrise as a string.
+            str: The local sunrise time as a string.
         """
 
+        if forecast:
+            return self.get_local_time(instance["sunrise"], instance["timezone"])
         return self.get_local_time(instance["sys"]["sunrise"], instance["timezone"])
 
-    def get_sunset(self, instance: Dict[str, Any]) -> str:
+    def get_sunset(self, instance: Dict[str, Any], forecast: bool = False) -> str:
         """
-        Retrieves the local sunset time from the given instance data.
+        Retrieves the sunset time from the given instance.
         Args:
             instance (Dict[str, Any]): A dictionary containing weather data.
+            forecast (bool, optional): A flag indicating whether the data is a forecast. Defaults to False.
         Returns:
-            str: The local sunset time as a string.
+            str: The local time of the sunset.
         """
 
+        if forecast:
+            return self.get_local_time(instance["sunset"], instance["timezone"])
         return self.get_local_time(instance["sys"]["sunset"], instance["timezone"])
 
     def geo_coordinates(self, instance: Dict[str, Any]) -> str:
@@ -262,4 +261,16 @@ class WeatherResponseSerializer(WeatherSerializer):
             "sunset": self.get_sunset(instance),
             "geo_coordinates": self.geo_coordinates(instance),
             "requested_time": self.request_time,
+            "forecast": [
+                {
+                    "temperature": self.get_temperature(forecast_instance, True),
+                    "wind": self.get_wind(forecast_instance, True),
+                    "cloudiness": self.get_cloudiness(forecast_instance, True),
+                    "pressure": self.get_pressure(forecast_instance, True),
+                    "humidity": self.get_humidity(forecast_instance, True),
+                    "sunrise": self.get_sunrise(forecast_instance, True),
+                    "sunset": self.get_sunset(forecast_instance, True),
+                }
+                for forecast_instance in instance["forecast"]
+            ],
         }
