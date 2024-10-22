@@ -44,12 +44,11 @@ SECRET_KEY = APP_SECRET_KEY
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True if APP_STAGE == "development" else False
 
-ALLOWED_HOSTS = []
-
-
+ALLOWED_HOSTS = ["*"]
 # Application definition
 
 THIRD_PARTY_APPS = [
+    "corsheaders",
     "rest_framework",
 ]
 
@@ -65,6 +64,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.cache.UpdateCacheMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.cache.FetchFromCacheMiddleware",
     "django.middleware.security.SecurityMiddleware",
@@ -75,6 +75,10 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+# CORS_ALLOWED_ORIGINS = ["*"]
+CORS_ALLOW_ALL_ORIGINS = True
+
 
 ROOT_URLCONF = "app.urls"
 
@@ -118,6 +122,7 @@ connect(
     port=MONGO_PORT,
     username=MONGO_USERNAME,
     password=MONGO_PASSWORD,
+    uuidRepresentation="standard",
 )
 
 
