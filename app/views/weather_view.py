@@ -49,12 +49,7 @@ class WeatherAPIView(APIView):
         forecast_api_key = request.headers.get("X-Open-Weather-Call-Key")
 
         try:
-            if not self._validate_params(city, country):
-                return Response(
-                    {"message": "City and country parameters are required"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
+            self._validate_params(city, country)
             weather_data = self._fetch_weather_data(city, country, weather_api_key)
             weather_forecast_data = self._fetch_weather_forecast(
                 weather_data, forecast_api_key
@@ -106,7 +101,7 @@ class WeatherAPIView(APIView):
                 {"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    def _validate_params(self, city: str, country: str) -> bool:
+    def _validate_params(self, city: str, country: str) -> bool | Response:
         """
         Validates the provided city and country parameters.
         Args:
@@ -117,9 +112,15 @@ class WeatherAPIView(APIView):
         """
 
         if not city or not country:
-            return False
+            return Response(
+                {"message": "City and country parameters are required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         if len(country) != 2:
-            return False
+            return Response(
+                {"message": "Country must be a 2-character string"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         return True
 
     def _fetch_weather_data(
