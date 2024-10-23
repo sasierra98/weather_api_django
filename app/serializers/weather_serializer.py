@@ -4,8 +4,8 @@ from rest_framework import serializers
 
 from datetime import datetime, timedelta
 
-from app.models.enums import BeaufortScale, WindDirection
-from app.utils.formatters import parse_kelvin_to_celsius
+from app.models.enums import BeaufortScale, TemperatureUnit, WindDirection
+from app.utils.formatters import parse_temperature
 
 
 class CoordSerializer(serializers.Serializer):
@@ -87,16 +87,17 @@ class WeatherResponseSerializer(WeatherSerializer):
             str: The temperature in Celsius. If forecast is True, returns a dictionary with temperatures for different times of the day.
         """
 
+        unit = self.context.get("unit", TemperatureUnit.CELSIUS.value)
         if forecast:
             return {
-                "day": parse_kelvin_to_celsius(instance["temp"]["day"]),
-                "min": parse_kelvin_to_celsius(instance["temp"]["min"]),
-                "max": parse_kelvin_to_celsius(instance["temp"]["max"]),
-                "night": parse_kelvin_to_celsius(instance["temp"]["night"]),
-                "eve": parse_kelvin_to_celsius(instance["temp"]["eve"]),
-                "morn": parse_kelvin_to_celsius(instance["temp"]["morn"]),
+                "day": parse_temperature(instance["temp"]["day"], unit),
+                "min": parse_temperature(instance["temp"]["min"], unit),
+                "max": parse_temperature(instance["temp"]["max"], unit),
+                "night": parse_temperature(instance["temp"]["night"], unit),
+                "eve": parse_temperature(instance["temp"]["eve"], unit),
+                "morn": parse_temperature(instance["temp"]["morn"], unit),
             }
-        return parse_kelvin_to_celsius(instance["main"]["temp"])
+        return parse_temperature(instance["main"]["temp"], unit)
 
     def get_beaufort_scale(self, wind_speed: float) -> str:
         """

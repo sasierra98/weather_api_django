@@ -49,3 +49,9 @@ class WindDirection(Enum):
     WEST_NORTHWEST = "West-Northwest"
     NORTHWEST = "Northwest"
     NORTH_NORTHWEST = "North-Northwest"
+
+
+class TemperatureUnit(Enum):
+    CELSIUS = "metric"
+    FAHRENHEIT = "imperial"
+    KELVIN = "standard"

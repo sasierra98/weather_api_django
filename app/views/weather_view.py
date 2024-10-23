@@ -16,6 +16,7 @@ from app.constants import (
     OPEN_WEATHER_MAP_ONE_CALL_KEY,
 )
 from app.models import Weather
+from app.models.enums import TemperatureUnit
 from app.serializers.weather_serializer import (
     WeatherResponseSerializer,
     WeatherSerializer,
@@ -42,6 +43,7 @@ class WeatherAPIView(APIView):
 
         city = request.query_params.get("city", "")
         country = request.query_params.get("country", "")
+        unit = request.query_params.get("unit", TemperatureUnit.CELSIUS.value)
 
         weather_api_key = request.headers.get("X-Open-Weather-Key")
         forecast_api_key = request.headers.get("X-Open-Weather-Call-Key")
@@ -87,7 +89,9 @@ class WeatherAPIView(APIView):
 
             weather_dict = weather.to_mongo()
             weather_dict["id"] = weather_dict["_id"]
-            response_serializer = WeatherResponseSerializer(data=weather_dict)
+            response_serializer = WeatherResponseSerializer(
+                data=weather_dict, context={"unit": unit}
+            )
 
             if not response_serializer.is_valid():
                 return Response(
