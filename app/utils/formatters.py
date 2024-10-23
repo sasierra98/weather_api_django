@@ -1,4 +1,7 @@
-def parse_kelvin_to_celsius(kelvin: float) -> str:
+from app.models.enums import TemperatureUnit
+
+
+def parse_temperature(kelvin: float, unit: str) -> str:
     """
     Convert a temperature from Kelvin to Celsius.
     Args:
@@ -6,8 +9,12 @@ def parse_kelvin_to_celsius(kelvin: float) -> str:
     Returns:
         str: Temperature in Celsius, formatted as a string with the degree symbol and "C".
     """
-
-    return str(round(kelvin - 273.15)) + "°C"
+    if unit == TemperatureUnit.CELSIUS.value:
+        return str(round(kelvin - 273.15)) + "°C"
+    elif unit == TemperatureUnit.FAHRENHEIT.value:
+        return str(round((kelvin - 273.15) * 9 / 5 + 32)) + "°F"
+    else:
+        return str(kelvin) + "°K"
 
 
 def format_celsius_temperature(temperature: float) -> str:
